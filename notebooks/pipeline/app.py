@@ -109,24 +109,24 @@ def run_prophet_forecast(
 
 
 def main() -> None:
-    st.set_page_config(page_title="Truck Demand Dashboard", layout="wide")
-    st.title("Truck Demand Forecast Dashboard")
-    st.caption("Historical trends + Prophet forecast from your cleaned daily data")
+    st.set_page_config(page_title="Tablero de Demanda de Camiones", layout="wide")
+    st.title("Tablero de Pronóstico de Demanda de Camiones")
+    st.caption("Tendencias históricas + pronóstico de Prophet a partir de tus datos diarios depurados")
 
     data = load_data(DATA_PATH)
 
-    st.sidebar.header("Forecast Controls")
-    metric = "volume"  # For now, we only forecast volume. Can add more metrics later.
-    forecast_days = st.sidebar.slider("Forecast days", min_value=30, max_value=60, value=45)
+    st.sidebar.header("Controles de Pronóstico")
+    metric = "volume"  # Por ahora solo pronosticamos volumen. Más métricas se pueden agregar después.
+    forecast_days = st.sidebar.slider("Días a pronosticar", min_value=30, max_value=60, value=45)
     interval_width = st.sidebar.slider(
-        "Confidence interval",
+        "Intervalo de confianza",
         min_value=0.80,
         max_value=0.99,
         value=0.90,
         step=0.01,
     )
     truck_daily_capacity = st.sidebar.slider(
-            "Daily volume per truck",
+            "Volumen diario por camión",
             min_value=0.5,
             value=15.0,
             max_value=30.0,
@@ -135,7 +135,7 @@ def main() -> None:
     # use_holidays = st.sidebar.checkbox("Use holiday effects", value=True)
     use_holidays = True
 
-    with st.spinner("Training Prophet and generating forecast..."):
+    with st.spinner("Entrenando Prophet y generando pronóstico..."):
         model, prophet_df, forecast, forecast_future, weekly_summary = run_prophet_forecast(
             data=data,
             target_col=metric,
@@ -145,7 +145,7 @@ def main() -> None:
             truck_daily_capacity=truck_daily_capacity,
         )
 
-    st.subheader(f"Truck Requirement Estimate ({forecast_days} days - {forecast_days // 7} weeks ahead)")
+    st.subheader(f"Estimación de Camiones Requeridos ({forecast_days} días - {forecast_days // 7} semanas hacia adelante)")
 
     total_forecast_volume = weekly_summary[weekly_summary['week'] == forecast_days // 7]['yhat'].sum()
     trucks_needed = weekly_summary[weekly_summary['week'] == forecast_days // 7]['trucks_needed'].sum()
@@ -153,24 +153,24 @@ def main() -> None:
     trucks_needed_upper = weekly_summary[weekly_summary['week'] == forecast_days // 7]['trucks_needed_upper'].sum()
 
     col1, col2, col3 = st.columns(3)
-    col1.metric(f"Forecast week volume", f"{total_forecast_volume:,.1f}")
-    col2.metric(f"Estimated trucks needed", f"{trucks_needed:,}")
-    col3.metric("Range (low-high)", f"{trucks_needed_lower:,} - {trucks_needed_upper:,}")
+    col1.metric(f"Volumen promedio de la semana", f"{total_forecast_volume:,.1f}")
+    col2.metric(f"Camiones estimados necesarios", f"{trucks_needed:,}")
+    col3.metric("Rango (mín-máx)", f"{trucks_needed_lower:,} - {trucks_needed_upper:,}")
 
     forecast_fig = plot_plotly(
         model,
         forecast,
-        xlabel="Date",
-        ylabel=f"Predicted {metric}",
+        xlabel="Fecha",
+        ylabel=f"{metric.capitalize()} pronosticado",
     )
 
-    # Add secondary y-axis for trucks needed based on daily volume per truck
+    # Eje Y secundario para camiones requeridos según volumen diario por camión
     daily_trucks_needed = np.ceil(forecast["yhat"] / truck_daily_capacity)
     forecast_fig.add_trace(
         go.Scatter(
             x=forecast["ds"],
             y=daily_trucks_needed,
-            name="Trucks Needed",
+            name="Camiones necesarios",
             mode="lines",
             yaxis="y2",
             line=dict(color="red"),
@@ -178,28 +178,28 @@ def main() -> None:
     )
     forecast_fig.update_layout(
         yaxis2=dict(
-            title="Trucks Needed",
+            title="Camiones necesarios",
             overlaying="y",
             side="right",
         )
     )
     st.plotly_chart(forecast_fig, width='stretch')
 
-    st.subheader("Forecast Components")
+    st.subheader("Componentes del Pronóstico")
     components_fig = plot_components_plotly(model, forecast)
     st.plotly_chart(components_fig, width='stretch')
 
-    st.subheader("Forward Forecast Table")
+    st.subheader("Tabla de Pronóstico Hacia Adelante")
     st.dataframe(
         weekly_summary[["week", "yhat", "yhat_lower", "yhat_upper", "trucks_needed", "trucks_needed_lower", "trucks_needed_upper"]]
         .rename(columns={
-            "week": "Week #",
-            "yhat": "Predicted Volume",
-            "yhat_lower": "Volume Lower Bound",
-            "yhat_upper": "Volume Upper Bound",
-            "trucks_needed": "Trucks Needed",
-            "trucks_needed_lower": "Trucks Needed Lower",
-            "trucks_needed_upper": "Trucks Needed Upper",
+            "week": "Semana #",
+            "yhat": "Volumen pronosticado",
+            "yhat_lower": "Límite inferior de volumen",
+            "yhat_upper": "Límite superior de volumen",
+            "trucks_needed": "Camiones necesarios",
+            "trucks_needed_lower": "Camiones necesarios (mín)",
+            "trucks_needed_upper": "Camiones necesarios (máx)",
         })
         .round(2),
         width='stretch',
