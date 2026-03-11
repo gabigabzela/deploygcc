@@ -5,6 +5,7 @@ from prophet.plot import plot_components_plotly, plot_plotly
 from datetime import datetime
 import numpy as np
 import math
+import plotly.graph_objects as go
 
 
 DATA_PATH = "data/03-final/daily_truck_data.csv"
@@ -131,7 +132,8 @@ def main() -> None:
             max_value=30.0,
             step=0.1,
         )
-    use_holidays = st.sidebar.checkbox("Use holiday effects", value=True)
+    # use_holidays = st.sidebar.checkbox("Use holiday effects", value=True)
+    use_holidays = True
 
     with st.spinner("Training Prophet and generating forecast..."):
         model, prophet_df, forecast, forecast_future, weekly_summary = run_prophet_forecast(
@@ -160,6 +162,26 @@ def main() -> None:
         forecast,
         xlabel="Date",
         ylabel=f"Predicted {metric}",
+    )
+
+    # Add secondary y-axis for trucks needed based on daily volume per truck
+    daily_trucks_needed = np.ceil(forecast["yhat"] / truck_daily_capacity)
+    forecast_fig.add_trace(
+        go.Scatter(
+            x=forecast["ds"],
+            y=daily_trucks_needed,
+            name="Trucks Needed",
+            mode="lines",
+            yaxis="y2",
+            line=dict(color="red"),
+        )
+    )
+    forecast_fig.update_layout(
+        yaxis2=dict(
+            title="Trucks Needed",
+            overlaying="y",
+            side="right",
+        )
     )
     st.plotly_chart(forecast_fig, width='stretch')
 
