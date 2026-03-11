@@ -1,0 +1,19 @@
+# Core data processing
+pandas>=2.2.0
+numpy>=1.26.0
+
+# Visualization
+plotly>=5.20.0
+matplotlib>=3.8.0
+seaborn>=0.13.0
+
+# Forecasting and app
+prophet>=1.1.5
+streamlit>=1.35.0
+
+# Machine learning
+scikit-learn>=1.4.0
+
+# Notebook support
+jupyter>=1.0.0
+ipykernel>=6.29.0
